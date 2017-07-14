@@ -27,20 +27,7 @@ class ExperimentLogisticRegression(Experiment):
         self.convergence = convergence
         self.combiner = combiner
         self.transformation = transformation
-        self.instance = LTFArray(
-            weight_array=LTFArray.normal_weights(n, k, random_instance=self.instance_prng),
-            transform=self.transformation,
-            combiner=self.combiner,
-        )
-        self.learner = LogisticRegression(
-            tools.TrainingSet(instance=self.instance, N=crp_count),
-            n,
-            k,
-            transformation=self.transformation,
-            combiner=self.combiner,
-            weights_prng=self.model_prng
-        )
-        super().__init__(self.log_name, self.learner)
+        super().__init__(self.log_name, None)
         self.min_dist = 0
         self.test_dist = 0
         self.accuracy = array([])
@@ -56,28 +43,25 @@ class ExperimentLogisticRegression(Experiment):
                                                           self.seed_model)
 
     def output_string(self):
-        msg = 'training times: {0}\n' \
-              'iterations: {1}\n' \
-              'test accuracy: {2}\n' \
-              'min/avf/max training time: {3} / {4} / {5}\n' \
-              'min/avg/max iteration count: {6} / {7} / {8}\n' \
-              'min/avg/max test accuracy: {9} / {10} / {11}'.format(
-            self.training_times,
-            self.iterations,
-            self.accuracy,
-            amin(self.training_times),
-            mean(self.training_times),
-            amax(self.training_times),
-            amin(self.iterations),
-            mean(self.iterations),
-            amax(self.iterations),
-            amin(self.accuracy),
-            mean(self.accuracy),
-            amax(self.accuracy),
-        )
-        return msg
+        return '\n'.join([
+            # seed_instance  seed_model i      n      k      N      trans  comb   iter   time   accuracy
+            '0x%x\t'        '0x%x\t'   '%i\t' '%i\t' '%i\t' '%i\t' '%s\t' '%s\t' '%i\t' '%f\t' '%f\t' % (
+                self.seed_instance,
+                self.seed_model,
+                i,
+                self.n,
+                self.k,
+                self.N,
+                self.transformation.__name__,
+                self.combiner.__name__,
+                self.iterations[i],
+                self.training_times[i],
+                self.accuracy[i],
+            )
+            for i in range(self.restarts)
+        ])
 
-    def analysis(self):
+    def learn(self):
         """
             This method learns one instance self.restarts times or a self.convergence threshold is reached.
             The results are saved in:
@@ -87,6 +71,20 @@ class ExperimentLogisticRegression(Experiment):
                 self.iterations
         :return:
         """
+        self.instance = LTFArray(
+            weight_array=LTFArray.normal_weights(self.n, self.k, random_instance=self.instance_prng),
+            transform=self.transformation,
+            combiner=self.combiner,
+        )
+        self.learner = LogisticRegression(
+            tools.TrainingSet(instance=self.instance, N=self.N),
+            self.n,
+            self.k,
+            transformation=self.transformation,
+            combiner=self.combiner,
+            weights_prng=self.model_prng
+        )
+
         i = 0.0
         while i < self.restarts and 1.0 - self.dist < self.convergence:
             start = time.time()
@@ -97,3 +95,6 @@ class ExperimentLogisticRegression(Experiment):
             self.accuracy = append(self.accuracy, 1.0 - self.dist)
             self.iterations = append(self.iterations, self.learner.iteration_count)
             i += 1
+
+    def analyze(self):
+        pass

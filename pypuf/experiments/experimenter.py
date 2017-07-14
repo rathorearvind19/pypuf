@@ -20,7 +20,7 @@ class Experimenter(object):
         setup_logger(self.log_name, self.log_name)
         self.logger = logging.getLogger(self.log_name)
         self._cpu_count = multiprocessing.cpu_count()
-        self.semaphore = multiprocessing.BoundedSemaphore(self._cpu_count)
+        self.semaphore = multiprocessing.BoundedSemaphore(min(10, self._cpu_count))
         self.out_queue = multiprocessing.Queue()
 
     def gather_output(self, out_queue):

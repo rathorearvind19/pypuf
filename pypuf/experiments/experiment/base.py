@@ -22,8 +22,7 @@ class Experiment(object):
 
         # The learner must be set to a valid parameter
         self.learner = learner
-        # assign instance for analysing
-        self.instance = self.learner.training_set.instance
+
         # must be set in execute
         self.model = None
         # must be set in execute
@@ -44,12 +43,12 @@ class Experiment(object):
             This method should be used to pass the experiment result as string back to the master.
             This is necessary because the master process(Experimenter) can not get a deep copy of the experiment back.
         """
-        msg = '{0}\n{1}'.format(self.name(), self.output_string())
+        msg = '{1}'.format(self.name(), self.output_string())
         queue.put_nowait(msg)
         self.logger.info(msg)
 
     @abc.abstractmethod
-    def analysis(self):
+    def analyze(self):
         """
             This method should analyse the results from learning which vary by the method of learning.
         """
@@ -64,8 +63,8 @@ class Experiment(object):
             release resources.
         """
         self.start_time = time.time()
-        self.model = self.learner.learn()
+        self.learn()
         self.measured_time = time.time() - self.start_time
-        self.analysis()
+        self.analyze()
         self._output(queue)
         semaphore.release()

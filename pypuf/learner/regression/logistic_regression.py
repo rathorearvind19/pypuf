@@ -105,7 +105,7 @@ class LogisticRegression(Learner):
         self.weights_mu = weights_mu
         self.weights_sigma = weights_sigma
         self.weights_prng = weights_prng
-        self.iteration_limit = 10000
+        self.iteration_limit = 800
         self.convergence_decimals = 3
         self.sign_combined_model_responses = None
         self.sigmoid_derivative = full(self.training_set.N, None, double)

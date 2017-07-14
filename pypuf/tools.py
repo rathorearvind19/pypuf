@@ -148,7 +148,7 @@ def setup_logger(logger_name, log_file="log", level=logging.INFO, write_file=Tru
     :param write_console: if set to false the logger does not log to stderr
     """
     l = logging.getLogger(logger_name)
-    formatter = logging.Formatter('%(asctime)s : %(message)s')
+    formatter = logging.Formatter('%(message)s')
     if write_file:
         file_handler = logging.FileHandler(log_file, mode='w')
         file_handler.setFormatter(formatter)
