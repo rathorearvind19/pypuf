@@ -21,13 +21,24 @@ def main(args):
     seed_instance = 0x15eed
     seed_model = 0x5eed
 
-    for transformation in [LTFArray.transform_soelter_lightweight_secure]:
+    for transformation in [
+        LTFArray.transform_1_1_bent,
+        LTFArray.transform_1_n_bent,
+        LTFArray.transform_atf,
+        LTFArray.transform_id,
+        LTFArray.transform_lightweight_secure,
+        #LTFArray.transform_mm,
+        LTFArray.transform_polynomial,
+        LTFArray.transform_shift,
+        LTFArray.transform_shift_lightweight_secure,
+        LTFArray.transform_soelter_lightweight_secure,
+    ]:
         for N in [
-            10000,
-            50000,
+            12000,
+            30016,
             100000,
-            250000,
-            1000000,
+            #250016,
+            #1000000,
         ]:
             for j in range(instance_samples):
 
