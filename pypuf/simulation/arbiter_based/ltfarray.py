@@ -135,12 +135,13 @@ class LTFArray(Simulation):
         N = len(cs)
         n = len(cs[0])
         assert n % 2 == 0, 'Secure Lightweight Input Transformation only defined for even n. Sorry!'
+        n_half = int(n/2)
 
         cs = transpose(
                 concatenate(
                 (
                     [ cs[:,i] * cs[:,i+1] for i in range(0, n, 2) ],    # ( x1x2, x3x4, ... xn-1xn )
-                    [ cs[:, n/2] ],                                     # ( x_(n/2+1) )
+                    [ cs[:, n_half] ],                                     # ( x_(n/2+1) )
                     [ cs[:,i] * cs[:,i+1] for i in range(1, n-2, 2) ],  # ( x2x3, x4x5, ... xn-2xn-1 )
                 )
             )
