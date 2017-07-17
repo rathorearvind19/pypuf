@@ -237,19 +237,21 @@ class LTFArray(Simulation):
         polynomial over the finite field GF(2^n)=F2/f*F2, where f is a
         irreducible polynomial of degree n.
         At the moment the irreducible polynomial f is hard coded and
-        of degree 65.
+        of degree 64 or 32.
         Each Arbiter Chain i receives as input the polynomial c^i
         as element of GF(2^n).
         """
 
-        # degree of f = 64
-        f = [1, 1, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 1]
-
         N = len(cs)
         n = len(cs[0])
-        assert n == 64, 'Polynomial transformation is only defined for challenges with n=64. Sorry!'
+        assert (n == 64) or (n == 32), 'Polynomial transformation is only defined for challenges with n=64 or n=32. ' \
+                                       'Sorry!'
+        if n == 64:
+            f = [1, 1, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                 0, 0, 0, 0, 0, 0, 0, 0, 1]
+        elif n == 32:
+            f = [1, 0, 1, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]
 
         """ Transform challenge to 0,1 array to compute transformation with numpy. """
         vtransform_to_01 = vectorize(tools.transform_challenge_11_to_01)
