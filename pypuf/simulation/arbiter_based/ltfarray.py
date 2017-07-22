@@ -319,6 +319,13 @@ class LTFArray(Simulation):
                 axis=2
             )
 
+        transform.__name__ = 'transform_concat_%s_nn%i_%s' % \
+                             (
+                                 transform_1.__name__.replace('transform_', ''),
+                                 nn,
+                                 transform_2.__name__.replace('transform_', '')
+                             )
+
         return transform
 
     @staticmethod
