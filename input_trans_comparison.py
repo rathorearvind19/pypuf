@@ -11,19 +11,24 @@ def main(args):
     log_file_prefix = ''.join(sample(list(ascii_uppercase), 5))
     stderr.write('log file prefix: %s\n' % log_file_prefix)
 
-    n = 32
-    k = 4
+    n = 48
+    k = 1
     combiner = LTFArray.combiner_xor
 
-    instance_samples = 50
+    instance_samples = 1
     experiments = []
 
     seed_instance = 0x15eed
     seed_model = 0x5eeed
 
     for transformation in [
+        LTFArray.transform_concat(
+            transform_1=LTFArray.transform_polynomial,
+            transform_2=LTFArray.transform_id,
+            nn=32
+        )
         #LTFArray.transform_1_1_bent,
-        LTFArray.transform_1_n_bent,
+        #LTFArray.transform_1_n_bent,
         #LTFArray.transform_atf,
         #LTFArray.transform_id,
         #LTFArray.transform_lightweight_secure,
@@ -34,9 +39,9 @@ def main(args):
         #LTFArray.transform_soelter_lightweight_secure,
     ]:
         for N in [
-            12000,
-            12000,
-            12000
+            250,
+            #12000,
+            #12000
             #30016,
             #100000,
             #250016,
