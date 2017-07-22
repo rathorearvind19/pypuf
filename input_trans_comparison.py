@@ -11,32 +11,34 @@ def main(args):
     log_file_prefix = ''.join(sample(list(ascii_uppercase), 5))
     stderr.write('log file prefix: %s\n' % log_file_prefix)
 
-    n = 64
+    n = 32
     k = 4
     combiner = LTFArray.combiner_xor
 
-    instance_samples = 10
+    instance_samples = 50
     experiments = []
 
     seed_instance = 0x15eed
-    seed_model = 0x5eed
+    seed_model = 0x5eeed
 
     for transformation in [
-        LTFArray.transform_1_1_bent,
+        #LTFArray.transform_1_1_bent,
         LTFArray.transform_1_n_bent,
-        LTFArray.transform_atf,
-        LTFArray.transform_id,
-        LTFArray.transform_lightweight_secure,
+        #LTFArray.transform_atf,
+        #LTFArray.transform_id,
+        #LTFArray.transform_lightweight_secure,
         #LTFArray.transform_mm,
-        LTFArray.transform_polynomial,
-        LTFArray.transform_shift,
-        LTFArray.transform_shift_lightweight_secure,
-        LTFArray.transform_soelter_lightweight_secure,
+        #LTFArray.transform_polynomial,
+        #LTFArray.transform_shift,
+        #LTFArray.transform_shift_lightweight_secure,
+        #LTFArray.transform_soelter_lightweight_secure,
     ]:
         for N in [
             12000,
-            30016,
-            100000,
+            12000,
+            12000
+            #30016,
+            #100000,
             #250016,
             #1000000,
         ]:
@@ -56,7 +58,7 @@ def main(args):
                     )
                 )
 
-                seed_instance += 1
+                #seed_instance += 1
                 seed_model += 1
 
     Experimenter(log_file_prefix + '.log', experiments).run()

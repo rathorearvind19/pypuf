@@ -1,6 +1,7 @@
 import time
 from numpy.random import RandomState
-from numpy import amin, amax, mean, array, append
+from numpy.linalg import norm
+from numpy import array, append
 from pypuf.experiments.experiment.base import Experiment
 from pypuf.learner.regression.logistic_regression import LogisticRegression
 from pypuf.simulation.arbiter_based.ltfarray import LTFArray
@@ -34,6 +35,7 @@ class ExperimentLogisticRegression(Experiment):
         self.training_times = array([])
         self.iterations = array([])
         self.dist = 1.0
+        self.model = None
 
     def name(self):
         return 'ExperimentLogisticRegression n={0} k={1} N={2} ' \
@@ -44,8 +46,8 @@ class ExperimentLogisticRegression(Experiment):
 
     def output_string(self):
         return '\n'.join([
-            # seed_instance  seed_model i      n      k      N      trans  comb   iter   time   accuracy
-            '0x%x\t'        '0x%x\t'   '%i\t' '%i\t' '%i\t' '%i\t' '%s\t' '%s\t' '%i\t' '%f\t' '%f\t' % (
+            # seed_instance  seed_model i      n      k      N      trans  comb   iter   time   accuracy  model values
+            '0x%x\t'        '0x%x\t'   '%i\t' '%i\t' '%i\t' '%i\t' '%s\t' '%s\t' '%i\t' '%f\t' '%f\t'    '%s'% (
                 self.seed_instance,
                 self.seed_model,
                 i,
@@ -57,6 +59,7 @@ class ExperimentLogisticRegression(Experiment):
                 self.iterations[i],
                 self.training_times[i],
                 self.accuracy[i],
+                ','.join(map(str, self.model.weight_array.flatten() * norm(self.model.weight_array.flatten())))
             )
             for i in range(self.restarts)
         ])
@@ -88,10 +91,10 @@ class ExperimentLogisticRegression(Experiment):
         i = 0.0
         while i < self.restarts and 1.0 - self.dist < self.convergence:
             start = time.time()
-            model = self.learner.learn()
+            self.model = self.learner.learn()
             end = time.time()
             self.training_times = append(self.training_times, end - start)
-            self.dist = tools.approx_dist(self.instance, model, min(10000, 2 ** self.n))
+            self.dist = tools.approx_dist(self.instance, self.model, min(10000, 2 ** self.n))
             self.accuracy = append(self.accuracy, 1.0 - self.dist)
             self.iterations = append(self.iterations, self.learner.iteration_count)
             i += 1
