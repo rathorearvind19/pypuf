@@ -243,14 +243,24 @@ class LTFArray(Simulation):
 
         N = len(cs)
         n = len(cs[0])
-        assert (n == 64) or (n == 32), 'Polynomial transformation is only defined for challenges with n=64 or n=32. ' \
+        assert n in [8, 16, 24, 32, 48, 64], 'Polynomial transformation is only implemented for challenges with n in {8, 16, 24, 32, 48, 64}. ' \
                                        'Sorry!'
         if n == 64:
             f = [1, 1, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                  0, 0, 0, 0, 0, 0, 0, 0, 1]
+        elif n == 48:
+            f = [1, 0, 1, 1, 0, 1, 0, 0, 1, 0, 1, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 1, 0, 1, 0, 0, 1, 0, 1, 1, 0, 1,
+                 0, 0, 1]
         elif n == 32:
             f = [1, 0, 1, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]
+        elif n == 24:
+            f = [1, 1, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]
+        elif n == 16:
+            f = [1, 0, 1, 0, 1, 0, 0, 0, 0, 1, 1, 0, 1, 0, 1, 1, 1]
+        elif n == 8:
+            f = [1, 0, 1, 0, 0, 1, 1, 0, 1]
 
         """ Transform challenge to 0,1 array to compute transformation with numpy. """
         vtransform_to_01 = vectorize(tools.transform_challenge_11_to_01)
