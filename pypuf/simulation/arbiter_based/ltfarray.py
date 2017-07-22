@@ -300,7 +300,7 @@ class LTFArray(Simulation):
             transformed_1 = transform_1(cs1, k)
             transformed_2 = transform_2(cs2, k)
             assert transformed_1.shape == (N, k, nn)
-            assert transformed_1.shape == (N, k, n - nn)
+            assert transformed_2.shape == (N, k, n - nn)
             return concatenate(
                 (
                     transformed_1,

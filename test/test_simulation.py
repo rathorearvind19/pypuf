@@ -258,7 +258,7 @@ class TestInputTransformation(unittest.TestCase):
 
     def test_transform_concat(self):
         test_array = array([
-            [ 1, -1, -1,  1, -1,  1, -1,  1,  1, -1, -1,  1],
+            [ 1, -1, -1,  1, -1,  1, -1,  1,  1, -1, -1],
         ])
         assert_array_equal(
             LTFArray.transform_concat(
@@ -268,9 +268,9 @@ class TestInputTransformation(unittest.TestCase):
             )(test_array, k=3),
             [
                 [
-                    [ 1, -1,  1, -1,  1, -1, -1,  1,  1, -1, -1,  1],
-                    [ 1, -1, -1,  1, -1,  1, -1,  1,  1, -1, -1,  1],
-                    [ 1, -1, -1,  1, -1,  1, -1,  1,  1, -1, -1,  1],
+                    [ 1, -1,  1, -1,  1, -1, -1,  1,  1, -1, -1],
+                    [ 1, -1, -1,  1, -1,  1, -1,  1,  1, -1, -1],
+                    [ 1, -1, -1,  1, -1,  1, -1,  1,  1, -1, -1],
                 ],
             ]
         )
