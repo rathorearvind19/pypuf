@@ -17,8 +17,9 @@ class Experiment(object):
         """
         # This must be a valid file name to be able to log the results
         self.log_name = log_name
-        setup_logger(self.log_name, self.log_name, write_console=False)
-        self.logger = logging.getLogger(self.log_name)
+
+        # The logger will be set once the experiment is run
+        self.logger = None
 
         # The learner must be set to a valid parameter
         self.learner = learner
@@ -62,6 +63,8 @@ class Experiment(object):
             this method. If you override this method make sure to call semaphore().release() as last method in order to
             release resources.
         """
+        setup_logger(self.log_name, self.log_name, write_console=False)
+        self.logger = logging.getLogger(self.log_name)
         self.start_time = time.time()
         self.learn()
         self.measured_time = time.time() - self.start_time
