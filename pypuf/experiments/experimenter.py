@@ -31,7 +31,7 @@ class Experimenter(object):
         # log the experiment output
         while msg != Experimenter.FINISHED or out_queue.qsize() > 0:
             # log the output
-            self.logger.info(msg+'\n')
+            self.logger.info(msg)
             msg = out_queue.get()
 
     def run(self):
