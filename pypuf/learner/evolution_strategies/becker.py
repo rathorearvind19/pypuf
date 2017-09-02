@@ -61,6 +61,7 @@ class Reliability_based_CMA_ES():
                 # include normalized new_LTF, if it is different from previous ones
                 if self.is_different_LTF(new_LTF, self.different_LTFs, self.num_of_LTFs, self.challenges,
                                          self.transform, self.combiner):
+                    assert li.norm(new_LTF) != 0, 'encountered [0,...,0] LTF'
                     self.different_LTFs[self.num_of_LTFs] = new_LTF * normalize / li.norm(new_LTF)  # normalize weights
                     self.num_of_LTFs += 1
         # polarize the learned combined LTF
