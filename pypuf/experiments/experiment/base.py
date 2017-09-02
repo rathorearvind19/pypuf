@@ -44,7 +44,7 @@ class Experiment(object):
 
 
 
-    def execute(self, queue, logger_name):
+    def execute(self, queue, logger_name, result_queue):
         """
         Executes the experiment at hand by
         (1) calling run() and measuring the run time of run() and
@@ -62,7 +62,7 @@ class Experiment(object):
         start_time = time.time()
         self.run()
         self.measured_time = time.time() - start_time
-        self.analyze()
+        result_queue.put(self.analyze())
 
 def setup_result_logger(queue, logger_name):
     """

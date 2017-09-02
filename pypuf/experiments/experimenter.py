@@ -30,9 +30,10 @@ class Experimenter(object):
         """
 
         # Setup multiprocessing logging
-        queue = multiprocessing.Queue(-1)
+        logging_queue = multiprocessing.Queue(-1)
+        result_queue = multiprocessing.Queue(-1)
         listener = multiprocessing.Process(target=log_listener,
-                                           args=(queue, setup_logger, self.logger_name,))
+                                           args=(logging_queue, setup_logger, self.logger_name,))
         listener.start()
 
         # list of active jobs
@@ -41,9 +42,9 @@ class Experimenter(object):
         for exp in self.experiments:
 
             # define experiment process
-            def run_experiment(queue, semaphore, logger_name):
+            def run_experiment(queue, semaphore, logger_name, result_queue):
                 try:
-                    exp.execute(queue, logger_name)  # run the actual experiment
+                    exp.execute(queue, logger_name, result_queue)  # run the actual experiment
                     semaphore.release()  # release CPU
                 except Exception as e:
                     semaphore.release()  # release CPU
@@ -51,7 +52,7 @@ class Experimenter(object):
 
             job = multiprocessing.Process(
                 target=run_experiment,
-                args=(queue, self.semaphore, self.logger_name)
+                args=(logging_queue, self.semaphore, self.logger_name, result_queue)
             )
 
             # wait for a free CPU
@@ -79,8 +80,10 @@ class Experimenter(object):
             job.join()
 
         # Quit logging process
-        queue.put_nowait(None)
+        logging_queue.put_nowait(None)
         listener.join()
+
+        return result_queue
 
 
 def setup_logger(logger_name):
