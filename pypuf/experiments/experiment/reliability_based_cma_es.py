@@ -151,10 +151,7 @@ class ExperimentReliabilityBasedCMAES(Experiment):
         """
         assert self.model is not None
 
-        responses_model = self.model.eval(self.challenges)
-        responses_instance = Reliability_based_CMA_ES.get_common_responses(self.responses_repeated)
-        assert len(responses_model) == len(responses_instance)
-        accuracy = 1.0 - tools.approx_dist(self.instance, self.model, min(10000, 2 ** self.n),
+        self.accuracy = 1.0 - tools.approx_dist(self.instance, self.model, min(10000, 2 ** self.n),
                                            random_instance=RandomState(0xC0DEBA5E))
         abortions = self.learner.abortions
 
