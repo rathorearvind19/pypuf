@@ -63,7 +63,7 @@ class CMA_ES():
     def update_parameters(self):
         estimation_multinormal = np.sqrt(2) * sp.gamma((self.n + 1) / 2) / sp.gamma((self.n) / 2)
         zero_mean = np.zeros(np.shape(self.mean))
-        desc_range = np.flip(np.array(range(self.pop_size)), 0)
+        desc_range = list(range(self.pop_size, 0, -1))
         # updating parameters
         mutations = self.sample_mutations(zero_mean, self.cov_matrix, self.pop_size, self.prng)
         self.individuals = self.reproduce(self.mean, self.pop_size, self.step_size, mutations)
@@ -89,7 +89,7 @@ class CMA_ES():
     @staticmethod
     def sample_mutations(zero_mean, cov_matrix, pop_size, prng):
         # returns mutations for a new generation of individuals as 2D array (corresponds to y_i)
-        return prng.multivariate_normal(zero_mean, cov_matrix, pop_size, check_valid='raise')
+        return prng.multivariate_normal(zero_mean, cov_matrix, pop_size)
 
     @staticmethod
     def reproduce(mean, pop_size, step_size, mutations):

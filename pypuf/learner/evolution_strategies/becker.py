@@ -163,7 +163,7 @@ class Reliability_based_CMA_ES():
         #   and instance for all individuals
         pop_size = np.shape(reliabilities)[0]
         correlations = np.zeros(pop_size)
-        ones = np.full(np.shape(reliabilities)[1], 1)
+        ones = np.ones(np.shape(reliabilities)[1])
         for i in range(pop_size):
             if np.var(reliabilities[i, :]) == 0:    # avoid divide by zero
                 correlations[i] = -1
