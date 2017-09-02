@@ -17,7 +17,7 @@ class ExperimentReliabilityBasedCMAES(Experiment):
 
     def __init__(self, log_name, n, k, challenge_count, seed_instance, seed_instance_noise, seed_model, transformation,
                  combiner, mu, sigma, sigma_noise, vote_count, repetitions, limit_step_size, limit_iteration,
-                 seed_challenges, max_challenge_count, success_accuracy, bias=False):
+                 seed_challenges, bias=False):
         """
         :param log_name: string
                          Prefix of the experiment logfile.
@@ -60,12 +60,6 @@ class ExperimentReliabilityBasedCMAES(Experiment):
         :param seed_challenges: int
                            Random seed which is used to initialize the pseudo-random number generator
                            which is used for the generation of challenges.
-        :param max_challenge_count: int
-                                    The maximal number of challenges which will be learned.
-        :param success_accuracy: float
-                                   This number defines the success of a learn attempt. This number must be between 0.5
-                                   and 1.0. This number is important for the heuristic which searches for the minimal
-                                   number of challenges to achieve success_accuracy.
         :param bias: boolean
                      This value is used to turn on input/output distort of the  PUF instance simulation.
         """
@@ -89,8 +83,6 @@ class ExperimentReliabilityBasedCMAES(Experiment):
         self.n = n
         self.k = k
         self.N = challenge_count
-        self.min_challenge_count = self.N
-        self.max_challenge_count = max_challenge_count
         self.mu = mu
         self.sigma = sigma
         self.sigma_noise = sigma_noise
@@ -110,18 +102,13 @@ class ExperimentReliabilityBasedCMAES(Experiment):
         self.challenges = None
         self.responses_repeated = None
         self.model = None
-        self.highest_challenge_count = self.max_challenge_count
-        self.smallest_challenge_count = self.min_challenge_count
-        self.possible_challenges = None
+        self.accuracy = .5
 
     def run(self):
         """
         This method setups and executes the puf simulation and the learner. The method decides whether NoisyLFTArray
         in case of self.vote_count == 1 or SimulationMajorityLTFArray in case self.vote_count > 1 should be used.
         """
-        if self.possible_challenges is None:
-            self.possible_challenges = array(range(self.min_challenge_count, self.max_challenge_count))
-
         # Random number generators
         instance_prng = RandomState(self.seed_instance)
         noise_prng = RandomState(self.seed_instance_noise)
@@ -184,28 +171,11 @@ class ExperimentReliabilityBasedCMAES(Experiment):
             self.combiner.__name__,
             self.learner.iterations,
             self.measured_time,
-            accuracy,
+            self.accuracy,
             abortions,
             ','.join(map(str, self.model.weight_array.flatten() / norm(self.model.weight_array.flatten())))
         )
         self.progress_logger.info(msg)
         self.result_logger.info(msg)
 
-        if accuracy < 0.8:
-            self.smallest_challenge_count = self.N
-
-        if accuracy >= 0.8:
-            self.highest_challenge_count = self.N
-
-        if self.smallest_challenge_count >= self.highest_challenge_count:
-            exit(0)
-
-        temp_pos_challenges = self.possible_challenges[self.possible_challenges < self.highest_challenge_count]
-        self.possible_challenges = temp_pos_challenges[temp_pos_challenges > self.smallest_challenge_count]
-
-        if len(self.possible_challenges) == 0:
-            exit(0)
-
-        self.N = random.choice(self.possible_challenges)
-
-        self.execute(self.queue, '')
+        return self.accuracy
