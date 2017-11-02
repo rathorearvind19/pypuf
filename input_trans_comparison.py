@@ -34,7 +34,7 @@ for _ in range(sample_size):
                     log_name=log_name,
                     n=64,
                     k=4,
-                    N=N*100,
+                    N=N*1000,
                     seed_instance=seed_instance,
                     seed_model=seed_model,
                     transformation=transformation,
