@@ -39,6 +39,8 @@ for _ in range(sample_size):
                     seed_model=seed_model,
                     transformation=transformation,
                     combiner=LTFArray.combiner_xor,
+                    seed_challenge=seed_model,
+                    seed_chl_distance=seed_model,
                 )
             )
 
