@@ -9,9 +9,7 @@ n = 64
 k = 4
 
 experiment_matrix = {
-    LTFArray.transform_lightweight_secure_original:                        [2,    10,     50, 100,      200, 300, 400,           1000],
-    LTFArray.generate_random_permutation_transform(0xbad, n, k, atf=True): [2,            50, 100,      200,      400, 600,      1000, 2000],
-    LTFArray.generate_random_permutation_transform(0xa55, n, k, atf=True): [2,            50, 100,      200,      400, 600,      1000, 2000],
+    LTFArray.transform_random: [2,            50, 100,      200,      400, 600,      1000, 2000],
 }
 
 sample_size = 1000
