@@ -3,8 +3,8 @@ This module is a command line tool which provides an interface for experiments w
 PUF LTFarray simulation with the logistic regression learning algorithm. If you want to use this tool you will have to
 define nine parameters which define the experiment.
 """
-from sys import argv, stderr
 import argparse
+import sys
 from pypuf.simulation.arbiter_based.ltfarray import LTFArray
 from pypuf.experiments.experiment.logistic_regression import ExperimentLogisticRegression
 from pypuf.experiments.experimenter import Experimenter
@@ -93,24 +93,24 @@ def main(args):
     try:
         transformation = getattr(LTFArray, 'transform_%s' % transformation_name)
     except AttributeError:
-        stderr.write('Transformation %s unknown or currently not implemented\n' % transformation_name)
+        sys.stderr.write('Transformation %s unknown or currently not implemented\n' % transformation_name)
         quit()
 
     try:
         combiner = getattr(LTFArray, 'combiner_%s' % combiner_name)
     except AttributeError:
-        stderr.write('Combiner %s unknown or currently not implemented\n' % combiner_name)
+        sys.stderr.write('Combiner %s unknown or currently not implemented\n' % combiner_name)
         quit()
 
     log_name = args.log_name
 
-    stderr.write('Learning %s-bit %s XOR Arbiter PUF with %s CRPs and %s restarts.\n\n' % (n, k, N, restarts))
-    stderr.write('Using\n')
-    stderr.write('  transformation:       %s\n' % transformation)
-    stderr.write('  combiner:             %s\n' % combiner)
-    stderr.write('  instance random seed: 0x%x\n' % seed_instance)
-    stderr.write('  model random seed:    0x%x\n' % seed_model)
-    stderr.write('\n')
+    sys.stderr.write('Learning %s-bit %s XOR Arbiter PUF with %s CRPs and %s restarts.\n\n' % (n, k, N, restarts))
+    sys.stderr.write('Using\n')
+    sys.stderr.write('  transformation:       %s\n' % transformation)
+    sys.stderr.write('  combiner:             %s\n' % combiner)
+    sys.stderr.write('  instance random seed: 0x%x\n' % seed_instance)
+    sys.stderr.write('  model random seed:    0x%x\n' % seed_model)
+    sys.stderr.write('\n')
 
     # create different experiment instances
     experiments = []
@@ -142,18 +142,17 @@ def main(args):
         'model_values\n'
     )
     # print the result headline
-    stderr.write(headline)
+    sys.stderr.write(headline)
 
     log_file = open(log_name + '.log', 'r')
 
     # print the results
     result = log_file.readline()
     while result != '':
-        stderr.write(str_format.format(*result.split('\t')))
+        sys.stderr.write(str_format.format(*result.split('\t')))
         result = log_file.readline()
 
     log_file.close()
-
 
 if __name__ == '__main__':
     main(argv[1:])
