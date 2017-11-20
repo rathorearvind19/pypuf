@@ -4,6 +4,7 @@ PUF LTFarray simulation with the logistic regression learning algorithm. If you 
 define nine parameters which define the experiment.
 """
 from sys import argv, stderr
+import argparse
 from pypuf.simulation.arbiter_based.ltfarray import LTFArray
 from pypuf.experiments.experiment.logistic_regression import ExperimentLogisticRegression
 from pypuf.experiments.experimenter import Experimenter
@@ -14,68 +15,77 @@ def main(args):
     This method includes the main functionality of the module it parses the argument vector and executes the learning
     attempts on the PUF instances.
     """
-    if len(args) < 10 or len(args) > 11:
-        stderr.write('LTF Array Simulator and Logistic Regression Learner\n')
-        stderr.write('Usage:\n')
-        stderr.write('sim_learn.py n k transformation combiner N restarts seed_instance seed_model [log_name]\n')
-        stderr.write('               n: number of bits per Arbiter chain\n')
-        stderr.write('               k: number of Arbiter chains\n')
-        stderr.write('  transformation: used to transform input before it is used in LTFs\n')
-        stderr.write('                  currently available:\n')
-        stderr.write('                  - id  -- does nothing at all\n')
-        stderr.write('                  - atf -- convert according to "natural" Arbiter chain\n')
-        stderr.write('                           implementation\n')
-        stderr.write('                  - mm  -- designed to achieve maximum PTF expansion length\n')
-        stderr.write('                           only implemented for k=2 and even n\n')
-        stderr.write('                  - lightweight_secure -- design by Majzoobi et al. 2008\n')
-        stderr.write('                                          only implemented for even n\n')
-        stderr.write('                  - shift_lightweight_secure -- design like Majzoobi\n')
-        stderr.write('                                                et al. 2008, but with the shift\n')
-        stderr.write('                                                operation executed first\n')
-        stderr.write('                                                only implemented for even n\n')
-        stderr.write('                  - soelter_lightweight_secure -- design like Majzoobi\n')
-        stderr.write('                                                  et al. 2008, but one bit different\n')
-        stderr.write('                                                  only implemented for even n\n')
-        stderr.write('                  - 1_n_bent -- one LTF gets "bent" input, the others id\n')
-        stderr.write('                  - 1_1_bent -- one bit gets "bent" input, the others id,\n')
-        stderr.write('                                this is proven to have maximum PTF\n')
-        stderr.write('                                length for the model\n')
-        stderr.write('                  - polynomial -- challenges are interpreted as polynomials\n')
-        stderr.write('                                  from GF(2^64). From the initial challenge c,\n')
-        stderr.write('                                  the i-th Arbiter chain gets the coefficients \n')
-        stderr.write('                                  of the polynomial c^(i+1) as challenge.\n')
-        stderr.write('                                  For now only challenges with length n=64 are accepted.\n')
-        stderr.write(
-            '                  - permutation_atf -- for each Arbiter chain first a pseudorandom permutation \n')
-        stderr.write('                                       is applied and thereafter the ATF transform.\n')
-        stderr.write('                  - random -- Each Arbiter chain gets a random challenge derived from the\n')
-        stderr.write('                              original challenge using a PRNG.\n')
-        stderr.write('        combiner: used to combine the output bits to a single bit\n')
-        stderr.write('                  currently available:\n')
-        stderr.write('                  - xor     -- output the parity of all output bits\n')
-        stderr.write('                  - ip_mod2 -- output the inner product mod 2 of all output\n')
-        stderr.write('                               bits (even n only)\n')
-        stderr.write('               N: number of challenge response pairs in the training set\n')
-        stderr.write('        restarts: number of repeated initializations the learner\n')
-        stderr.write('       instances: number of repeated initializations the instance\n')
-        stderr.write('                  The number total learning attempts is restarts*instances.\n')
-        stderr.write('   seed_instance: random seed used for LTF array instance\n')
-        stderr.write('      seed_model: random seed used for the model in first learning attempt\n')
-        stderr.write('      [log_name]: path to the logfile which contains results from all instances. The tool '
-                     'will add a ".log" to log_name. The default path is ./sim_learn.log\n')
-        quit(1)
+    parser = argparse.ArgumentParser(
+        prog='sim_learn',
+        description="LTF Array Simulator and Logistic Regression Learner",
+    )
+    parser.add_argument("n", help="number of bits per Arbiter chain", type=int)
+    parser.add_argument("k", help="number of Arbiter chains", type=int)
+    parser.add_argument(
+        "transformation",
+        help="used to transform input before it is used in LTFs. Current available: "
+             '"1_1_bent",'
+             '"1_n_bent",'
+             '"atf,id",'
+             '"lightweight_secure",'
+             '"lightweight_secure_original",'
+             '"mm",'
+             '"permutation_atf",'
+             '"polynomial,random",'
+             '"shift",'
+             '"shift_lightweight_secure",'
+             '"soelter_lightweight_secure"',
+        type=str,
+    )
+    parser.add_argument(
+        'combiner',
+        help='used to combine the output bits to a single bit. Current available: "ip_mod2", "xor"',
+        type=str,
+    )
+    parser.add_argument('N', help='number of challenge response pairs in the training set', type=int)
+    parser.add_argument('restarts', help='number of repeated initializations the learner', type=int)
+    parser.add_argument(
+        'instances',
+        help='number of repeated initializations the instance\n'
+             'The number total learning attempts is restarts*instances.',
+        type=int,
+    )
+    parser.add_argument('seed_instance', help='random seed used for LTF array instance', type=str)
+    parser.add_argument('seed_model', help='random seed used for the model in first learning attempt', type=str)
+    parser.add_argument(
+        '--log_name',
+        help='path to the logfile which contains results from all instances. The tool '
+             'will add a ".log" to log_name. The default path is ./sim_learn.log',
+        default='sim_learn',
+        type=str,
+    )
+    parser.add_argument(
+        '--seed_challenges',
+        help='random seed used to draw challenges for the training set',
+        type=str,
+    )
+    parser.add_argument('--seed_distance', help='random seed used to calculate the accuracy', type=str)
 
-    n = int(args[1])
-    k = int(args[2])
-    transformation_name = args[3]
-    combiner_name = args[4]
-    N = int(args[5])
-    restarts = int(args[6])
+    args = parser.parse_args(args)
 
-    instances = int(args[7])
+    n = args.n
+    k = args.k
+    transformation_name = args.transformation
+    combiner_name = args.combiner
+    N = args.N
+    restarts = args.restarts
 
-    seed_instance = int(args[8], 16)
-    seed_model = int(args[9], 16)
+    instances = args.instances
+
+    seed_instance = int(args.seed_instance, 16)
+    seed_model = int(args.seed_model, 16)
+
+    seed_challenges = 0x5A551
+    if args.seed_challenges is not None:
+        seed_challenges = int(args.seed_challenges, 16)
+    seed_distance = 0xB055
+    if args.seed_distance is not None:
+        seed_distance = int(args.seed_distance, 16)
 
     transformation = None
     combiner = None
@@ -92,9 +102,7 @@ def main(args):
         stderr.write('Combiner %s unknown or currently not implemented\n' % combiner_name)
         quit()
 
-    log_name = 'sim_learn'
-    if len(args) == 11:
-        log_name = args[10]
+    log_name = args.log_name
 
     stderr.write('Learning %s-bit %s XOR Arbiter PUF with %s CRPs and %s restarts.\n\n' % (n, k, N, restarts))
     stderr.write('Using\n')
@@ -117,7 +125,9 @@ def main(args):
                 seed_instance=seed_instance + j,
                 seed_model=seed_model + j + start_number,
                 transformation=transformation,
-                combiner=combiner
+                combiner=combiner,
+                seed_challenge=seed_challenges,
+                seed_chl_distance=seed_distance,
             )
             experiments.append(experiment)
 
@@ -144,5 +154,6 @@ def main(args):
 
     log_file.close()
 
+
 if __name__ == '__main__':
-    main(argv)
+    main(argv[1:])
