@@ -155,4 +155,4 @@ def main(args):
     log_file.close()
 
 if __name__ == '__main__':
-    main(argv[1:])
+    main(sys.argv[1:])
