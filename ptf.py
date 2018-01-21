@@ -112,8 +112,8 @@ def main(args):
                     9, 9, 9, 9, 10, 10, 10, 10, 10, 10, 10, 11, 11, 11, 11, 11, 11 ]
 
     master_seed = 0xbadeaffe
-    sample_size = 100
-    n_max = 16
+    sample_size = 200
+    n_max = 22
     experiments = []
     log_name = ''.join(sample(list(ascii_uppercase), 5))
 
