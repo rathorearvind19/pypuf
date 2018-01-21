@@ -610,6 +610,42 @@ class LTFArray(Simulation):
         return transform
 
     @staticmethod
+    def generate_random_monomial_transform(n, k, seed, noise=0):
+        random_instance = RandomState(seed)
+
+        if noise != 0:
+            # instead of chosen k*n^2 bits to choose the parity functions,
+            # we simulate weak PUFs by choosing a continuous value from [-1, 1)
+            # to then add a little noise later and take the sign.
+            # This way we achieve differing reliabilities for each bit,
+            # i.e. some bits will flip often (because initial value is close to 0)
+            # and other bits will flip seldom (becase initial value is close to -1 or 1).
+            S_coll = random_instance.normal(scale=1.0, size=(k, n, n))
+        else:
+            S_coll = random_instance.choice((0, 1), (k, n, n))
+
+        def transform(challenges, k):
+            (N, n) = challenges.shape
+
+            S_coll_effective = S_coll
+            if noise != 0:
+                S_coll_effective += (sign(random_instance.normal(scale=noise, size=(k, n, n))) + 1) / 2
+
+            return [
+                [
+                    [
+                        prod(c[S_coll_effective[l, i] > 0]) if len(S_coll_effective[l, i] > 0) == 0 else 1
+                        for i in range(n)
+                    ]
+                    for l in range(k)
+                ]
+                for c in challenges
+            ]
+
+        transform.__name__ = 'transform_random_monomial_%i_%i_%s' % (n, k, seed)
+        return transform
+
+    @staticmethod
     def normal_weights(n, k, mu=0, sigma=1, random_instance=RandomState()):
         """
         Returns weights for an array of k LTFs of size n each.
