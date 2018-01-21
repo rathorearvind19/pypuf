@@ -629,12 +629,13 @@ class LTFArray(Simulation):
 
             S_coll_effective = S_coll
             if noise != 0:
-                S_coll_effective += (sign(random_instance.normal(scale=noise, size=(k, n, n))) + 1) / 2
+                S_coll_effective += random_instance.normal(scale=noise, size=(k, n, n))
+            S_coll_effective = sign(1 - 2 * S_coll_effective)
 
             return [
                 [
                     [
-                        prod(c[S_coll_effective[l, i] > 0]) if len(S_coll_effective[l, i] > 0) == 0 else 1
+                        prod(c[S_coll_effective[l, i] < 0])
                         for i in range(n)
                     ]
                     for l in range(k)
