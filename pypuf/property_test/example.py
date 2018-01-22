@@ -78,21 +78,19 @@ def example_uniqueness():
 
 def example_uniqueness_statistic():
     """This method shows the uniqueness statistic function."""
-    n = 8
-    k = 1
-    N = 2 ** n
-    instance_count = 11
+    n = 64
+    k = 2
+    N = 210
+    instance_count = 20
     measurements = 1
-    transformation = NoisyLTFArray.transform_id
-    combiner = NoisyLTFArray.combiner_xor
-    weights = NoisyLTFArray.normal_weights(n=n, k=k)
+    transformation = LTFArray.transform_id
+    combiner = LTFArray.combiner_xor
     instances = [
-        NoisyLTFArray(
-            weight_array=weights,
+        LTFArray(
+            weight_array=LTFArray.normal_weights(n=n, k=k, random_instance=RandomState(i)),
             transform=transformation,
             combiner=combiner,
-            sigma_noise=NoisyLTFArray.sigma_noise_from_random_weights(n, weights)
-        ) for _ in range(instance_count)
+        ) for i in range(instance_count)
     ]
 
     challenges = array(list(sample_inputs(n, N)))
