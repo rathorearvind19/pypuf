@@ -1,7 +1,7 @@
 import sys
 from random import sample
 from string import ascii_uppercase
-from numpy import array
+from numpy import array, append, zeros, concatenate, empty
 from numpy.random import RandomState, normal, shuffle
 from itertools import product
 from datetime import datetime, timedelta
@@ -14,6 +14,22 @@ class PTFMonomialsExperiment(Experiment):
     @staticmethod
     def monomials_random(n, k, random_instance):
         return random_instance.choice((0, 1), (k, n, n))
+
+    @staticmethod
+    def monomials_random_partitioned(n, k, random_instance):
+        assert n / k == n // k
+        monomials = empty((0, n, n))
+        w = n // k
+        for l in range(k):
+            m = concatenate((
+                zeros((1, n, l*w)),
+                random_instance.choice((0, 1), (1, n, w)),
+                zeros((1, n, (k-l-1)*w))
+            ), axis=2)
+            assert m.shape == (1, n, n), "unexspected size: %s" % m.shape
+            monomials = append(monomials, m, axis=0)
+        assert monomials.shape == (k, n, n)
+        return monomials
 
     @staticmethod
     def monomials_atf(n, k, random_instance):
@@ -121,9 +137,9 @@ def main(args):
     for n in range(2, n_max):
         for _ in range(sample_size):
             for monomials in [
-                PTFMonomialsExperiment.monomials_atf,
-                PTFMonomialsExperiment.monomials_random,
+                PTFMonomialsExperiment.monomials_random_partitioned
             ]:
+                if n / sufficient_k[n] != n // sufficient_k[n]: continue
                 experiments.append(
                     PTFMonomialsExperiment(
                         log_name=log_name,
@@ -138,6 +154,17 @@ def main(args):
     shuffle(experiments)
     Experimenter(log_name, experiments).run()
 
+
+def main2(args):
+    n = 4
+    k = 2
+    monomials = PTFMonomialsExperiment.monomials_random_partitioned(n, k, RandomState())
+    print(monomials)
+
+    for l in range(k):
+        print("\n\nk = %i:\n-----" % l)
+        for i in range(n):
+            print("S for bit #%i: %s" % (i, monomials[l, i]))
 
 if __name__ == '__main__':
     main(sys.argv)
