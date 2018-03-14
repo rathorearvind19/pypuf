@@ -81,7 +81,7 @@ def main(args):
 
     # Create different experiment instances
     experiments = []
-    for params in param_sets:
+    for p, params in enumerate(param_sets):
         n = int(params[0])
         k = int(params[1])
         noisiness = float(params[2])
@@ -94,19 +94,19 @@ def main(args):
             for attempt in range(attempts):
                 l_name = log_name
                 if instances > 1 or attempts > 1:
-                    l_name += '_%i_%i' % (instance, attempt)
+                    l_name += '_%i_%i_%i' % (p, instance, attempt)
                 experiment = ExperimentReliabilityBasedCMAES(
                     log_name=l_name,
-                    seed_instance=(seed_i + instance) % 2 ** 32,
+                    seed_instance=(p + seed_i + instance) % 2 ** 32,
                     k=k,
                     n=n,
                     transform=LTFArray.transform_id,
                     combiner=LTFArray.combiner_xor,
                     noisiness=noisiness,
-                    seed_challenges=(seed_c + instance) % 2 ** 32,
+                    seed_challenges=(p + seed_c + instance) % 2 ** 32,
                     num=num,
                     reps=reps,
-                    seed_model=(seed_m + attempt) % 2 ** 32,
+                    seed_model=(p + seed_m + attempt) % 2 ** 32,
                     pop_size=pop_size,
                     limit_stag=limit_s,
                     limit_iter=limit_i,

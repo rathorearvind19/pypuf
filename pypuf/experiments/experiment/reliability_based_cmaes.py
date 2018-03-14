@@ -104,12 +104,13 @@ class ExperimentReliabilityBasedCMAES(Experiment):
         """Analyze the learned model"""
         assert self.model is not None
         self.result_logger.info(
-            '0x%x\t0x%x\t0x%x\t%i\t%i\t%i\t%f\t%i\t%i\t%f\t%s\t%f\t%s\t%i\t%i\t%s',
+            '0x%x\t0x%x\t0x%x\t%i\t%i\t%f\t%i\t%f\t%i\t%i\t%f\t%s\t%f\t%s\t%i\t%i\t%s',
             self.seed_instance,
             self.seed_challenges,
             self.seed_model,
             self.n,
             self.k,
+            1.0 - tools.approx_dist(self.instance, self.instance, min(100000, 2 ** self.n), self.prng_c),
             self.num,
             self.noisiness,
             self.reps,
