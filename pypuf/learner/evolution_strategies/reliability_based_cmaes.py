@@ -27,11 +27,11 @@ class ReliabilityBasedCMAES(Learner):
     FREQ_LOGGING = 1
     THRESHOLD_DIST = 0.25
 
-    # Semi-constant :-)
+    # Semi-constant
     approx_challenge_num = 10000
 
     def __init__(self, training_set, k, n, transform, combiner,
-                 pop_size, limit_stag, limit_iter, random_seed, logger):
+                 pop_size, limit_stag, limit_iter, random_seed, logger, mean_shift, step_size_start):
         """Initialize a Reliability based CMAES Learner for the specified LTF array
 
         :param training_set:    Training set, a data structure containing repeated challenge response pairs
@@ -60,9 +60,25 @@ class ReliabilityBasedCMAES(Learner):
         self.num_abortions = 0
         self.num_learned = 0
         self.logger = logger
+        self.mean_shift = mean_shift
+        self.step_size_start = step_size_start
 
         if 2**n < self.approx_challenge_num:
-            self.approx_challenge_num = 2 ** n
+            self.approx_challenge_num = 2**n
+
+    def log_state(self, ellipsoid, fitness):
+        """Log a snapshot of learning variables while running"""
+        if self.logger is None:
+            return
+        self.logger.debug(
+            '%i\t%f\t%f\t%i\t%i\t%s',
+            self.num_iterations,
+            ellipsoid.sigma,
+            fitness(ellipsoid.mean),
+            self.num_learned,
+            self.num_abortions,
+            ','.join(map(str, list(ellipsoid.mean))),
+        )
 
     def learn(self):
         """Compute a model according to the given LTF Array parameters and training set
@@ -71,32 +87,16 @@ class ReliabilityBasedCMAES(Learner):
                  The computed model.
         """
 
-        def log_state(ellipsoid):
-            """Log a snapshot of learning variables while running"""
-            if self.logger is None:
-                return
-            self.logger.debug(
-                '%i\t%f\t%f\t%i\t%i\t%s',
-                self.num_iterations,
-                ellipsoid.sigma,
-                fitness(ellipsoid.mean),
-                self.num_learned,
-                self.num_abortions,
-                ','.join(map(str, list(ellipsoid.mean))),
-            )
-
         # Preparation
-        epsilon = np.sqrt(self.n) * self.CONST_EPSILON
         fitness = self.create_fitness_function(
             challenges=self.training_set.challenges,
             measured_rels=self.measure_rels(self.training_set.responses),
-            epsilon=epsilon,
+            epsilon=np.sqrt(self.n) * self.CONST_EPSILON,
             transform=self.transform,
             combiner=self.combiner,
         )
         normalize = np.sqrt(2) * gamma(self.n / 2) / gamma((self.n - 1) / 2)
         mean_start = np.zeros(self.n)
-        step_size_start = 1
         options = {
             'seed': 0,
             'pop': self.pop_size,
@@ -108,7 +108,7 @@ class ReliabilityBasedCMAES(Learner):
         with self.avoid_printing():
             while self.num_learned < self.k:
                 aborted = False
-                options['seed'] = self.prng.randint(2 ** 32)
+                options['seed'] = self.prng.randint(2**32)
                 is_same_solution = self.create_abortion_function(
                     chains_learned=self.chains_learned,
                     num_learned=self.num_learned,
@@ -116,7 +116,9 @@ class ReliabilityBasedCMAES(Learner):
                     combiner=self.combiner,
                     threshold=self.THRESHOLD_DIST,
                 )
-                search = cma.CMAEvolutionStrategy(x0=mean_start, sigma0=step_size_start, inopts=options)
+                if self.k > 1:
+                    mean_start = self.prng.rand(self.n) * 2*self.mean_shift - self.mean_shift
+                search = cma.CMAEvolutionStrategy(x0=mean_start, sigma0=self.step_size_start, inopts=options)
                 counter = 1
                 # Learn individual LTF array using abortion if evolutionary search approximates previous a solution
                 while not search.stop():
@@ -124,7 +126,7 @@ class ReliabilityBasedCMAES(Learner):
                     search.tell(curr_points, [fitness(point) for point in curr_points])
                     self.num_iterations += 1
                     if counter % self.FREQ_LOGGING == 0:
-                        log_state(search)
+                        self.log_state(search, fitness)
                     counter += 1
                     if counter % self.FREQ_ABORTION_CHECK == 0:
                         if is_same_solution(search.mean):

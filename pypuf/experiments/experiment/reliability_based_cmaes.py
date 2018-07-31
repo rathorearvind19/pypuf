@@ -21,7 +21,7 @@ class ExperimentReliabilityBasedCMAES(Experiment):
             self, log_name,
             seed_instance, k, n, transform, combiner, noisiness,
             seed_challenges, num, reps,
-            seed_model, pop_size, limit_stag, limit_iter
+            seed_model, pop_size, limit_stag, limit_iter, mean_shift, step_size_start
     ):
         """Initialize an Experiment using the Reliability based CMAES Learner for modeling LTF Arrays
         :param log_name:        Log name, Prefix of the name of the experiment log file
@@ -69,6 +69,8 @@ class ExperimentReliabilityBasedCMAES(Experiment):
         self.pop_size = pop_size
         self.limit_s = limit_stag
         self.limit_i = limit_iter
+        self.mean_shift = mean_shift
+        self.step_size_start = step_size_start
         # Basic objects
         self.instance = None
         self.learner = None
@@ -97,6 +99,8 @@ class ExperimentReliabilityBasedCMAES(Experiment):
             self.limit_i,
             self.seed_model,
             self.progress_logger,
+            self.mean_shift,
+            self.step_size_start
         )
         self.model = self.learner.learn()
 
@@ -104,7 +108,7 @@ class ExperimentReliabilityBasedCMAES(Experiment):
         """Analyze the learned model"""
         assert self.model is not None
         self.result_logger.info(
-            '0x%x\t0x%x\t0x%x\t%i\t%i\t%f\t%i\t%f\t%i\t%i\t%f\t%s\t%f\t%s\t%i\t%i\t%s',
+            '0x%x\t0x%x\t0x%x\t%i\t%i\t%f\t%i\t%f\t%i\t%i\t%f\t%f\t%f\t%s\t%s\t%f\t%s\t%i\t%i\t%s',
             self.seed_instance,
             self.seed_challenges,
             self.seed_model,
@@ -115,7 +119,10 @@ class ExperimentReliabilityBasedCMAES(Experiment):
             self.noisiness,
             self.reps,
             self.pop_size,
+            self.mean_shift,
+            self.step_size_start,
             1.0 - tools.approx_dist(self.instance, self.model, min(100000, 2 ** self.n), self.prng_c),
+            ','.join(map(str, self.calc_individual_accs_new())),
             ','.join(map(str, self.calc_individual_accs())),
             self.measured_time,
             self.learner.stops,
@@ -124,25 +131,63 @@ class ExperimentReliabilityBasedCMAES(Experiment):
             ','.join(map(str, self.model.weight_array.flatten() / np.linalg.norm(self.model.weight_array.flatten()))),
         )
 
+    def calc_accs_from_matches(self, matches):
+        """Calculate distances between matched chains via accuracies"""
+        transform = self.model.transform
+        combiner = self.model.combiner
+        accuracies = np.zeros(self.k)
+        for i in range(self.k):
+            chain_original = LTFArray(self.instance.weight_array[i, np.newaxis, :], transform, combiner)
+            chain_model = LTFArray(self.model.weight_array[int(matches[i]), np.newaxis, :], transform, combiner)
+            accuracy = tools.approx_dist(chain_original, chain_model, min(10000, 2 ** self.n), self.prng_c)
+            accuracies[i] = accuracy
+        return accuracies
+
+    def calc_individual_accs_new(self):
+        """Calculate the accuracies of individual chains of the learned model"""
+        distances = np.zeros(self.k)
+        matches = np.zeros(self.k)
+        polarities = np.zeros(self.k)
+        for i in range(self.k):
+            chain_original = self.instance.weight_array[i, np.newaxis, :]
+            norm_original = np.linalg.norm(chain_original)
+            original_normed = chain_original / norm_original
+            for j in range(self.k):
+                chain_model = self.model.weight_array[j, np.newaxis, :]
+                norm_model = np.linalg.norm(chain_model)
+                model_normed = chain_model / norm_model
+                distance = np.linalg.norm(np.subtract(original_normed, model_normed))
+                distance_inv = np.linalg.norm(np.subtract(original_normed, (-1)*model_normed))
+                pol = 1
+                if distance_inv < distance:
+                    distance = distance_inv
+                    pol = -1
+                if j == 0 or distance < distances[i]:
+                    distances[i] = distance
+                    polarities[i] = pol
+                    matches[i] = j
+        accuracies = self.calc_accs_from_matches(matches)
+        return accuracies
+
     def calc_individual_accs(self):
         """Calculate the accuracies of individual chains of the learned model"""
         transform = self.model.transform
         combiner = self.model.combiner
         accuracies = np.zeros(self.k)
-        poles = np.zeros(self.k)
+        polarities = np.zeros(self.k)
         for i in range(self.k):
             chain_original = LTFArray(self.instance.weight_array[i, np.newaxis, :], transform, combiner)
             for j in range(self.k):
                 chain_model = LTFArray(self.model.weight_array[j, np.newaxis, :], transform, combiner)
                 accuracy = tools.approx_dist(chain_original, chain_model, min(10000, 2 ** self.n), self.prng_c)
-                pole = 1
+                pol = 1
                 if accuracy < 0.5:
                     accuracy = 1.0 - accuracy
-                    pole = -1
+                    pol = -1
                 if accuracy > accuracies[i]:
                     accuracies[i] = accuracy
-                    poles[i] = pole
-        accuracies *= poles
+                    polarities[i] = pol
+        accuracies *= polarities
         for i in range(self.k):
             if accuracies[i] < 0:
                 accuracies[i] += 1

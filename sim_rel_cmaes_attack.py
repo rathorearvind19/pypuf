@@ -1,6 +1,6 @@
 """
 This module is a command line tool which provides an interface for experiments which are designed to learn an arbiter
-PUF LTFarray simulation with the reliability based CMAES learning algorithm. If you want to use this tool you will have
+PUF LTF array simulation with the reliability based CMAES learning algorithm. If you want to use this tool you will have
 to define nine parameters which define the experiment.
 """
 from sys import argv, stderr
@@ -47,6 +47,8 @@ def main(args):
     pop_size = int(args[6])
     limit_s = float(args[7])
     limit_i = int(args[8])
+    mean_shift = float(args[9])
+    step_size_start = float(args[10])
 
     # Initialize or use optional parameters
     log_name = 'sim_rel_cmaes'
@@ -55,18 +57,18 @@ def main(args):
     seed_i = rnd.randint(0, 2 ** 32)
     seed_c = rnd.randint(0, 2 ** 32)
     seed_m = rnd.randint(0, 2 ** 32)
-    if len(args) >= 10:
-        log_name = args[9]
-        if len(args) >= 11:
-            instances = int(args[10])
-            if len(args) >= 12:
-                attempts = int(args[11])
-                if len(args) >= 13:
-                    seed_i = int(args[12], 0)
-                    if len(args) >= 14:
-                        seed_c = int(args[13], 0)
-                        if len(args) == 15:
-                            seed_m = int(args[14], 0)
+    if len(args) >= 12:
+        log_name = args[11]
+        if len(args) >= 13:
+            instances = int(args[12])
+            if len(args) >= 14:
+                attempts = int(args[13])
+                if len(args) >= 15:
+                    seed_i = int(args[14], 0)
+                    if len(args) >= 16:
+                        seed_c = int(args[15], 0)
+                        if len(args) == 17:
+                            seed_m = int(args[16], 0)
 
     stderr.write('Learning %i time(s) each %i (%i,%i)-XOR Arbiter PUF(s) with %f noisiness, '
                  'using %i different %i times repeated CRPs.\n'
@@ -102,6 +104,8 @@ def main(args):
                 pop_size=pop_size,
                 limit_stag=limit_s,
                 limit_iter=limit_i,
+                mean_shift=mean_shift,
+                step_size_start=step_size_start
             )
             experiments.append(experiment)
 
