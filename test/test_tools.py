@@ -167,3 +167,7 @@ class TestInputFunctions(unittest.TestCase):
             self.assertEqual(len(arr[i]), sub_arr_size,
                              'The sub array does not match the length of {0}.'.format(sub_arr_size))
             self.assertEqual(arr.dtype, arr_type, 'The array must be of type {0}'.format(arr_type))
+
+
+class TestUtilityFunctions(unittest.TestCase):
+    """This class test a collection of different utility functions."""

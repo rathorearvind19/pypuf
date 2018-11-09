@@ -3,11 +3,13 @@ This module provides several different implementations of arbiter PUF simulation
 model is the core of each simulation class.
 """
 from numpy import sum as np_sum
-from numpy import prod, shape, sign, array, transpose, concatenate, dstack, swapaxes, sqrt, amax, tile, append
+from numpy import prod, shape, sign, array, transpose, concatenate, dstack, swapaxes, sqrt, amax, tile, append, int8
 from numpy.random import RandomState
 from pypuf import tools
 from pypuf.simulation.base import Simulation
 import pypuf_helper as ph
+
+import numpy as np
 
 
 class LTFArray(Simulation):
@@ -61,6 +63,14 @@ class LTFArray(Simulation):
         res = ph.transform_id(challenges, k)
         tools.assert_result_type(res)
         return res
+
+    @staticmethod
+    def transform_none(challenges, k):
+        """
+        Use this "transform" for pre-transformed challenges. It does nothing.
+        :return: exactly the input challenges object
+        """
+        return challenges
 
     @classmethod
     def transform_atf(cls, challenges, k):
@@ -479,6 +489,59 @@ class LTFArray(Simulation):
         return result
 
     @staticmethod
+    def transform_fixed_permutation(challenges, k):
+        """
+        Permutes the challenge bits using hardcoded, fix point free permutations designed such that no
+        sub-challenge bit gets permuted equally for all other generated sub-challenges. Such permutations
+        are not easy to find, hence this function only supports a limited number of n and k.
+        After permutation, we apply the ATF transform to the sub-challenges (hence generating what in the
+        linear Arbiter PUF model is called feature vectors).
+        :param challenges: array of int8 shape(N,n)
+                           Array of challenges which should be evaluated by the simulation.
+        :param k: int
+                  Number of LTFArray PUFs
+        :return:  array of int8 shape(N,k,n)
+                  Array of transformed challenges.
+        """
+        FIXED_PERMUTATION_SEEDS = {
+            64: [2989, 2992, 3038, 3084, 3457, 6200, 7089, 18369, 21540, 44106],
+        }
+
+        # check parameter n
+        n = len(challenges[0])
+        assert n in FIXED_PERMUTATION_SEEDS.keys(), 'Fixed permutation currently not supported for n=%i, but only ' \
+                                                    'for n in %s' % (n, FIXED_PERMUTATION_SEEDS.keys())
+
+        # check parameter k
+        seeds = FIXED_PERMUTATION_SEEDS[n]
+        assert k <= len(seeds), 'Fixed permutation for n=%i currently only supports k<=%i.' % (n, len(seeds))
+
+        # generate permutations
+        permutations = [RandomState(seed).permutation(n) for seed in seeds]
+
+        # perform permutations
+        result = swapaxes(
+            array([
+                challenges[:, permutations[i]]
+                for i in range(k)
+            ], dtype=int8),
+            0,
+            1
+        )
+
+        # Perform atf transform
+        result = transpose(
+            array([
+                prod(result[:, :, i:], 2)
+                for i in range(n)
+            ], dtype=int8),
+            (1, 2, 0)
+        )
+
+        return result
+
+
+    @staticmethod
     def generate_stacked_transform(transform_1, puf_count, transform_2):
         """
         Returns an input transformation that will transform the first puf_count challenges using transform_1,
@@ -706,9 +769,23 @@ class LTFArray(Simulation):
                  Array of responses for the N different challenges.
         """
         tools.assert_result_type(inputs)
+        assert self.n == inputs.shape[2], 'challenges should be length %i, but were %i' % (
+            self.n,
+            inputs.shape[2],
+        )
         if self.bias is not None:
-            responses = ph.eval(tools.append_last(inputs, 1), self.weight_array)
+            assert self.weight_array.shape == (self.k, self.n + 1), 'weight array should have shape %s, but had %s' % (
+                (self.k, self.n + 1),
+                self.weight_array.shape,
+            )
+            responses = ph.eval(tools.append_last(inputs, int8(1)), self.weight_array)
+            #inputs_and_bias = tools.append_last(inputs, 1)
+            #responses = transpose(array([dot(inputs_and_bias[:,l], self.weight_array[l]) for l in range(self.k)]))
         else:
+            assert self.weight_array.shape == (self.k, self.n), 'weight array should have shape %s, but had %s' % (
+                (self.k, self.n),
+                self.weight_array.shape,
+            )
             responses = ph.eval(inputs, self.weight_array)
         return responses
 
@@ -726,55 +803,6 @@ class NoisyLTFArray(LTFArray):
         sd of weight differences (sigma_weight) and noisiness factor
         """
         return sqrt(n) * sigma_weight * noisiness
-
-    @staticmethod
-    def init_normal_empirical(n, k, transform, combiner, intra_dist, random_instance=RandomState(), bias=None,
-                              approx_threshold=.1):
-        """
-        Initializes a NoisyLTFArray with given parameters that can be expected to have the given intra_dist.
-        :param n: length of challenges
-        :param k: number of LTFs in the array
-        :param transform: input transformation for the LTF array
-        :param combiner: function mapping the individual output bits to one output bit
-        :param intra_dist: desired intra_dist, defined as the probability to see same output on two evaluations using
-                           the same challenge.
-        :param random_instance: pseudorandom generator to be used
-        :param bias: bias of the LTF array
-        :return: NoisyLTFArray
-        """
-        assert intra_dist > 0
-
-        instance = NoisyLTFArray(
-            weight_array=LTFArray.normal_weights(n, k, random_instance=random_instance),
-            transform=transform,
-            combiner=combiner,
-            sigma_noise=1,
-            random_instance=random_instance,
-            bias=bias,
-        )
-
-        # double max_sigma_noise until large enough
-        while tools.approx_dist(instance, instance, 1000) < intra_dist:
-            instance.sigma_noise *= 2
-        min_sigma_noise = 0
-        max_sigma_noise = 2*instance.sigma_noise
-
-        # binary search in [0, max_sigma_noise]
-        instance.sigma_noise = (max_sigma_noise + min_sigma_noise) / 2
-        estimation_distance = tools.approx_dist(instance, instance, 10000, random_instance)
-        while abs(intra_dist - estimation_distance) > approx_threshold:
-
-            # update interval bounds
-            if estimation_distance > intra_dist:
-                max_sigma_noise = instance.sigma_noise
-            elif estimation_distance <= intra_dist:
-                min_sigma_noise = instance.sigma_noise
-
-            # update instance and estimated distance
-            instance.sigma_noise = (max_sigma_noise + min_sigma_noise) / 2
-            estimation_distance = tools.approx_dist(instance, instance, 10000, random_instance)
-
-        return instance
 
     def __init__(self, weight_array, transform, combiner, sigma_noise,
                  random_instance=RandomState(), bias=None):

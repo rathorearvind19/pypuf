@@ -8,6 +8,7 @@ from numpy import count_nonzero, array, append, zeros, vstack, mean, prod, ones,
 from numpy import sum as np_sum
 from numpy import abs as np_abs
 from numpy.random import RandomState
+from random import sample
 
 RESULT_TYPE = 'int8'
 
@@ -84,12 +85,14 @@ def append_last(arr, item):
     :return: n dimensional array of type
              initial arr with appended element item
     """
+    assert arr.dtype == dtype(type(item)), 'The elements of arr and item must be of the same type, but the array has ' \
+                                           'type %s and the item has type %s.' % (arr.dtype, dtype(type(item)))
     dimension = list(shape(arr))
     assert len(dimension) >= 1, 'arr must have at least one dimension.'
     # the lowest level should contain one item
     dimension[-1] = 1
     # create an array white shape(array) where the lowest level contains only one item
-    item_arr = full(dimension, item)
+    item_arr = full(dimension, item, dtype=RESULT_TYPE)
     # the item should be appended at the lowest level
     axis = len(dimension) - 1
     return append(arr, item_arr, axis=axis)
@@ -111,6 +114,10 @@ def approx_dist(instance1, instance2, num, random_instance=RandomState()):
     assert instance1.n == instance2.n
     inputs = random_inputs(instance1.n, num, random_instance=random_instance)
     return (num - count_nonzero(instance1.eval(inputs) == instance2.eval(inputs))) / num
+
+
+def set_dist(instance, set):
+    return (set.N - count_nonzero(instance.eval(set.challenges) == set.responses)) / set.N
 
 
 def approx_fourier_coefficient(s, training_set):
@@ -164,7 +171,9 @@ def compare_functions(function1, function2):
 
 def transform_challenge_01_to_11(challenge):
     """
-    This function is used to transform a challenge from 0,1 notation to -1,1 notation.
+    This function is meant to be used with the numpy vectorize method.
+    After vectorizing, transform_challenge_01_to_11 can be applied to
+    numpy arrays to transform a challenge from 0,1 notation to -1,1 notation.
     :param challenge: array of int8
                       Challenge vector in 0,1 notation
     :return: array of int8
@@ -179,7 +188,9 @@ def transform_challenge_01_to_11(challenge):
 
 def transform_challenge_11_to_01(challenge):
     """
-    This function is used to transform a challenge from -1,1 notation to 0,1 notation.
+    This function is meant to be used with the numpy vectorize method.
+    After vectorizing, transform_challenge_11_to_01 can be applied to
+    numpy arrays to transform a challenge from -1,1 notation to 0,1 notation.
     :param challenge: array of int8
                       Challenge vector in -1,1 notation
     :return: array of int8
@@ -209,13 +220,19 @@ def poly_mult_div(challenge, irreducible_polynomial, k):
     import polymath as pm
     assert_result_type(challenge)
     assert_result_type(irreducible_polynomial)
+    # TODO Change the type to int8 or uint8
+    challenge = challenge.astype('uint8')
+    irreducible_polynomial = irreducible_polynomial.astype('uint8')
+    # TODO Change the type to int8 or uint8
+    # challenge = challenge.astype('int64')
+    # irreducible_polynomial = irreducible_polynomial.astype('int64')
     c_original = challenge
     res = None
     for i in range(k):
         challenge = pm.polymul(challenge, c_original)
         challenge = pm.polymodpad(challenge, irreducible_polynomial)
         if i == 0:
-            res = array([challenge], dtype=RESULT_TYPE)
+            res = array([challenge], dtype='int8')
         else:
             res = vstack((res, challenge))
     res = res.astype(RESULT_TYPE)
@@ -254,7 +271,33 @@ def assert_result_type(arr):
     assert arr.dtype == dtype(RESULT_TYPE), 'Must be an array of {0}. Got array of {1}'.format(RESULT_TYPE, arr.dtype)
 
 
-class TrainingSet():
+class ChallengeResponseSet():
+
+    def __init__(self, challenges, responses):
+        self.challenges = challenges
+        self.responses = responses
+        assert len(self.challenges) == len(self.responses)
+        self.N = len(self.challenges)
+
+    def random_subset(self, N):
+        if N < 1:
+            N = int(self.N * N)
+        return self.subset(sample(range(self.N), N))
+
+    def block_subset(self, idx, total):
+        return self.subset(range(
+            int(idx / total * self.N),
+            int((idx + 1) / total * self.N)
+        ))
+
+    def subset(self, subset_slice):
+        return ChallengeResponseSet(
+            challenges=self.challenges[subset_slice],
+            responses=self.responses[subset_slice]
+        )
+
+
+class TrainingSet(ChallengeResponseSet):
     """
     Basic data structure to hold a collection of challenge response pairs.
     Note that this is, strictly speaking, not a set.
@@ -270,6 +313,9 @@ class TrainingSet():
                                 PRNG which is used to draft challenges.
         """
         self.instance = instance
-        self.challenges = sample_inputs(instance.n, N, random_instance=random_instance)
-        self.responses = instance.eval(self.challenges)
-        self.N = N
+        challenges = array(list(sample_inputs(instance.n, N, random_instance=random_instance)))
+        super().__init__(
+            challenges=challenges,
+            responses=instance.eval(challenges)
+        )
+
