@@ -51,8 +51,9 @@ def permutation_is_good(probs, delta):
     for i in range(n - 1):
         if probs[i + 1] - probs[i] <= delta:
             counter += 1
-            if counter > 2:
-                return False
+    print(counter)
+    if counter > 2:
+        return False
     return True
 
 

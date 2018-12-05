@@ -1,18 +1,18 @@
 from pypuf.simulation.arbiter_based.ltfarray import LTFArray
 from pypuf.tools import sample_inputs
-from random_permutation import *
+from mispan_permutation import *
 import datetime
 
 
 # Randomly choose seed
-seed = np.random.randint(0xffff)
+seed = np.random.randint(2**32)
 print('seed = ', seed)
 
 # Create PUF instance
-n = 16
+n = 32
 k = 1
 prng_i = np.random.RandomState(seed)
-transformation = LTFArray.transform_id
+transformation = LTFArray.transform_atf
 combiner = LTFArray.combiner_xor
 
 instance = LTFArray(
@@ -30,7 +30,7 @@ prng_c = np.random.RandomState(seed+1)
 challenges = sample_inputs(n, num, prng_c)
 time_sampling = datetime.datetime.now()
 
-
+"""
 # Create swapped challenges
 cs_swapped = create_swapped_challenges(challenges)
 time_swapping = datetime.datetime.now()
@@ -80,11 +80,9 @@ print('\nsampling\t',   times[0], '\t', 100*round(times[0]/times[6], 3), '%',
       '\ndelta\t\t',    times[4], '\t', 100*round(times[4]/times[6], 3), '%',
       '\nchecking\t',   times[5], '\t', 100*round(times[5]/times[6], 3), '%',
       '\n\ntotal\t\t',  times[6], '\t', 100*round(times[6]/times[6], 3), '%')
-
-
 """
+
 prng_p = np.random.RandomState(seed+2)
 permutation = find_good_permutation(instance, challenges, prng_p)
 
 print(permutation)
-"""

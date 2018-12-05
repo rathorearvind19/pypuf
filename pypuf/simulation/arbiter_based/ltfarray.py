@@ -542,6 +542,78 @@ class LTFArray(Simulation):
 
 
     @staticmethod
+    def transform_aes_sbox(challenges, atf=False):
+        result = array([tools.substitute_aes(c) for c in challenges]).astype(int8)
+
+        if atf:
+            # Perform atf transform
+            n = len(challenges[0])
+            result = transpose(
+                array([
+                    prod(result[:, :, i:], 2)
+                    for i in range(n)
+                ], dtype=int8),
+                (1, 2, 0)
+            )
+
+        return result
+
+
+    @staticmethod
+    def generate_permutation_transform(permutations, atf=False):
+        """
+        Returns an input transformation that uses a given permutation
+        :param atf: boolean
+                    Perform ATF transform after permuting
+        :return:  A function: array of int with shape(N,n), int number of PUFs k -> shape(N,k,n)
+                  A function that can perform the desired transformation.
+        """
+        assert len(permutations.shape) == 2,\
+            'The input "permutations" has to be a 2-dim array, but it had shape %s.' % (permutations.shape,)
+        (puf_count, challenge_length) = permutations.shape
+
+        def transform(challenges, k):
+            """
+            Method as described in generate_permutation_transform doc string.
+            :param challenges: array of int8 shape(N,n)
+                               Array of challenges which should be evaluated by the simulation.
+            :param k: int
+                     Number of LTFArray PUFs
+            :return: A function: array of int with shape(N,n), int number of PUFs k -> shape(N,k,n)
+                     A function that can perform the desired transformation.
+            """
+            tools.assert_result_type(challenges)
+            (_, n) = challenges.shape
+            assert k == puf_count and n == challenge_length, \
+                'Due to the used permutation the input transform requires (n=%i, k=%i),' \
+                'but (%i, %i) where given.' % (puf_count, challenge_length, k, n)
+
+            result = swapaxes(
+                array([
+                    challenges[:, permutations[i]]
+                    for i in range(puf_count)
+                ]),
+                0,
+                1
+            ).astype(int8)
+
+            if atf:
+                # Perform atf transform
+                result = transpose(
+                    array([
+                        prod(result[:, :, i:], 2)
+                        for i in range(n)
+                    ]),
+                    (1, 2, 0)
+                ).astype(int8)
+
+            return result
+
+        transform.__name__ = 'transform_permutations' + ('_plus_atf_' if atf else '')
+        return transform
+
+
+    @staticmethod
     def generate_stacked_transform(transform_1, puf_count, transform_2):
         """
         Returns an input transformation that will transform the first puf_count challenges using transform_1,
